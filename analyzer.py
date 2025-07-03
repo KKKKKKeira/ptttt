@@ -6,7 +6,7 @@ from datetime import datetime
 from collections import defaultdict
 import os
 
-NEGATIVE_WORDS = ["爛", "死好", "氣死", "廢物", "崩潰", "糞", "無言", "討厭", "白爛", "垃圾", "不要臉", "爆氣"]
+NEGATIVE_WORDS = ["爛", "死好", "氣死", "廢物", "崩潰", "糞", "無言", "討厭", "白爛", "垃圾", "不要臉", "爆氣","低能", "1450", "塔綠班", "支那", "死好", "腦殘", "豬隊友"]
 headers = {"cookie": "over18=1"}
 
 def fetch_article_links(num_pages=10):
