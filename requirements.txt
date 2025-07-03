@@ -1,0 +1,7 @@
+flask
+requests
+beautifulsoup4
+jieba
+pandas
+matplotlib
+gunicorn
