@@ -1,64 +1,75 @@
+
 import requests
 from bs4 import BeautifulSoup
 import jieba
 import pandas as pd
+from collections import Counter
 from datetime import datetime
-from collections import defaultdict
+import re
 import os
 
-NEGATIVE_WORDS = ["爛", "死好", "氣死", "廢物", "崩潰", "糞", "無言", "討厭", "白爛", "垃圾", "不要臉", "爆氣","低能", "1450", "塔綠班", "支那", "死好", "腦殘", "豬隊友"]
-headers = {"cookie": "over18=1"}
+# 更強的負面詞庫
+NEGATIVE_WORDS = [
+    "爛", "垃圾", "噁心", "崩潰", "不爽", "無言", "生氣",
+    "痛苦", "難過", "不合理", "爆氣", "離譜", "討厭",
+    "低能", "1450", "塔綠班", "支那", "死好", "腦殘", "豬隊友"
+]
 
-def fetch_article_links(num_pages=10):
+def crawl_ptt_articles(pages=10):
+    session = requests.Session()
+    session.cookies.set("over18", "1")
+    articles = []
+
     base_url = "https://www.ptt.cc/bbs/Gossiping/index{}.html"
-    pages_to_crawl = 10 
-    board_url = f"{base_url}/bbs/Gossiping/index.html"
-    links = []
-    for _ in range(num_pages):
-        res = requests.get(board_url, headers=headers)
-        soup = BeautifulSoup(res.text, "html.parser")
-        articles = soup.select("div.title a")
-        for a in articles:
-            links.append(base_url + a["href"])
-        prev_page = soup.select_one("div.btn-group-paging a.btn.wide:nth-child(2)")
-        if prev_page:
-            board_url = base_url + prev_page["href"]
-        else:
-            break
-    return links
-
-def fetch_article_content(url):
-    try:
-        res = requests.get(url, headers=headers)
-        soup = BeautifulSoup(res.text, "html.parser")
-        time_str = soup.select_one("span.article-meta-tag:-soup-contains('時間')")
-        time_value = time_str.find_next_sibling("span").text.strip()
-        time_obj = datetime.strptime(time_value, "%a %b %d %H:%M:%S %Y")
-        content = soup.select_one("#main-content").text.split("--\n")[0]
-        return content, time_obj
-    except:
-        return "", None
-
-def count_negative_words(text):
-    words = jieba.lcut(text)
-    return sum(1 for w in words if w in NEGATIVE_WORDS)
+    for i in range(1, pages + 1):
+        url = base_url.format(i)
+        r = session.get(url)
+        soup = BeautifulSoup(r.text, "html.parser")
+        entries = soup.select(".r-ent")
+        for entry in entries:
+            href = entry.select_one("a")
+            if href:
+                article_url = "https://www.ptt.cc" + href["href"]
+                try:
+                    ar = session.get(article_url)
+                    ar.encoding = "utf-8"
+                    soup = BeautifulSoup(ar.text, "html.parser")
+                    main_content = soup.select_one("#main-content")
+                    if main_content:
+                        text = main_content.get_text()
+                        text = re.sub(r"(※|◆|--|編輯|發信站).*", "", text)
+                        articles.append({
+                            "url": article_url,
+                            "content": text
+                        })
+                except:
+                    continue
+    return articles
 
 def analyze_trends():
-    links = fetch_article_links(3)
-    hour_trends = defaultdict(int)
-    for url in links:
-        content, time_obj = fetch_article_content(url)
-        if not time_obj:
-            continue
-        hour_key = time_obj.strftime("%Y-%m-%d %H:00")
-        count = count_negative_words(content)
-        hour_trends[hour_key] += count
-    df = pd.DataFrame(sorted(hour_trends.items()), columns=["hour", "negative_count"])
+    articles = crawl_ptt_articles()
+    trend_data = []
+
+    for article in articles:
+        content = article["content"]
+        words = jieba.lcut(content)
+        hour = datetime.now().replace(minute=0, second=0, microsecond=0)
+        negative_count = sum(1 for w in words if w in NEGATIVE_WORDS)
+        trend_data.append({"hour": hour, "negative_count": negative_count})
+
+    # 聚合每小時
+    df = pd.DataFrame(trend_data)
     if df.empty:
-        return df
-    base = df.iloc[0]["negative_count"]
+        return pd.DataFrame()
+    df = df.groupby("hour").sum().reset_index()
+    df["hour"] = df["hour"].astype(str)
+
+    base = df["negative_count"].iloc[0]
     df["change_from_base"] = df["negative_count"] - base
-    df["trend"] = df["change_from_base"].apply(lambda x: "↑" if x > 0 else ("↓" if x < 0 else "→"))
+    df["trend"] = df["change_from_base"].apply(
+        lambda x: "↑" if x > 0 else ("↓" if x < 0 else "→")
+    )
+
     os.makedirs("data", exist_ok=True)
     df.to_csv("data/trends.csv", index=False)
     return df
