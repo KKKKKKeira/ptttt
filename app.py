@@ -7,7 +7,7 @@ app = Flask(__name__)
 
 @app.route("/")
 def index():
-    return "PTT 輿情趨勢分析系統啟動中"
+    return render_template("index.html")
 
 @app.route("/analyze")
 def analyze():
