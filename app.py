@@ -14,12 +14,6 @@ def analyze():
     df = analyze_trends()
     return df.to_json(orient="records", force_ascii=False)
 
-@app.route("/plot")
-def plot():
-    success = generate_plot()
-    if success:
-        return send_file("static/trend_plot.png", mimetype="image/png")
-    return jsonify({"error": "無資料"})
 
 if __name__ == "__main__":
     app.run(debug=True)
