@@ -9,8 +9,9 @@ import os
 NEGATIVE_WORDS = ["爛", "死好", "氣死", "廢物", "崩潰", "糞", "無言", "討厭", "白爛", "垃圾", "不要臉", "爆氣"]
 headers = {"cookie": "over18=1"}
 
-def fetch_article_links(num_pages=3):
-    base_url = "https://www.ptt.cc"
+def fetch_article_links(num_pages=10):
+    base_url = "https://www.ptt.cc/bbs/Gossiping/index{}.html"
+    pages_to_crawl = 10 
     board_url = f"{base_url}/bbs/Gossiping/index.html"
     links = []
     for _ in range(num_pages):
