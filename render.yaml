@@ -6,10 +6,3 @@ services:
     buildCommand: ""
     startCommand: "gunicorn app:app"
     autoDeploy: true
-
-  - type: worker
-    name: ptt-scheduler
-    env: python
-    plan: free
-    buildCommand: ""
-    startCommand: "python scheduler.py"

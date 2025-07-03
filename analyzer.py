@@ -37,10 +37,7 @@ def analyze_trends():
     counter = Counter(word_list)
     neg_count = sum([counter[w] for w in NEGATIVE_WORDS])
 
-    # 建立資料夾
     os.makedirs("data", exist_ok=True)
-
-    # 記錄時間與變化量
     now = datetime.now().strftime("%Y-%m-%d %H:00")
     csv_path = "data/trends.csv"
     if os.path.exists(csv_path):
