@@ -1,69 +1,92 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PTT 輿情趨勢圖</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>PTT 趨勢圖</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.0"></script>
 </head>
 <body>
-  <h2 style="text-align:center">PTT 八卦版情緒趨勢圖</h2>
-  <div style="text-align:center">
-    <label for="dateSelect">選擇日期：</label>
-    <select id="dateSelect"></select>
-  </div>
-  <canvas id="trendChart" width="1000" height="400"></canvas>
+    <h2>PTT 負面輿情趨勢圖</h2>
+    <label for="datePicker">選擇日期：</label>
+    <input type="date" id="datePicker">
+    <canvas id="trendChart" width="1200" height="400"></canvas>
 
-  <script>
+    <script>
     let chart;
-    function loadData(date) {
-      fetch("/data?date=" + date)
-        .then(res => res.json())
-        .then(data => {
-          const labels = data.map(d => d.timestamp);
-          const values = data.map(d => d.change_from_base);
-          const ctx = document.getElementById("trendChart").getContext("2d");
-          if (chart) chart.destroy();
-          chart = new Chart(ctx, {
-            type: "line",
-            data: {
-              labels: labels,
-              datasets: [{
-                label: "相對基準的負面詞變化量",
-                data: values,
-                borderColor: "red",
-                borderWidth: 2,
-                pointRadius: 4,
-                tension: 0.2
-              }]
-            },
-            options: {
-              scales: {
-                x: { title: { display: true, text: '時間' } },
-                y: { title: { display: true, text: '變化量' } }
-              }
-            }
-          });
-        });
+    const ctx = document.getElementById('trendChart').getContext('2d');
+
+    function fetchData(date) {
+        fetch(`/data?date=${date}`)
+            .then(response => response.json())
+            .then(data => {
+                const labels = data.map(d => d.timestamp);
+                const values = data.map(d => d.change_from_base);
+                if (chart) chart.destroy();
+                chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: '變化量',
+                            data: values,
+                            borderWidth: 2,
+                            borderColor: 'red',
+                            fill: false
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            zoom: {
+                                pan: {
+                                    enabled: true,
+                                    mode: 'x',
+                                },
+                                zoom: {
+                                    wheel: {
+                                        enabled: true
+                                    },
+                                    pinch: {
+                                        enabled: true
+                                    },
+                                    mode: 'x',
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: '時間'
+                                },
+                                ticks: {
+                                    autoSkip: true,
+                                    maxRotation: 30,
+                                    minRotation: 30,
+                                    maxTicksLimit: 24
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: '變化量'
+                                }
+                            }
+                        }
+                    }
+                });
+            });
     }
 
-    fetch("/data")
-      .then(res => res.json())
-      .then(data => {
-        const dates = [...new Set(data.map(d => d.timestamp.slice(0, 10)))];
-        const select = document.getElementById("dateSelect");
-        dates.forEach(date => {
-          const option = document.createElement("option");
-          option.value = date;
-          option.text = date;
-          select.appendChild(option);
-        });
-        if (dates.length > 0) {
-          select.value = dates[dates.length - 1];
-          loadData(select.value);
-        }
-        select.addEventListener("change", () => loadData(select.value));
-      });
-  </script>
+    document.getElementById('datePicker').addEventListener('change', (e) => {
+        fetchData(e.target.value);
+    });
+
+    window.onload = () => {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('datePicker').value = today;
+        fetchData(today);
+    };
+    </script>
 </body>
 </html>

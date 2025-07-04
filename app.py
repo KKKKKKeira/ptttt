@@ -1,8 +1,12 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 import pandas as pd
 import os
 
 app = Flask(__name__)
+
+@app.route("/")
+def index():
+    return render_template("index.html")
 
 @app.route("/data")
 def data():
@@ -13,10 +17,6 @@ def data():
     if date_filter:
         df = df[df["timestamp"].str.startswith(date_filter)]
     return df.to_dict(orient="records")
-
-@app.route("/")
-def index():
-    return "PTT 輿情系統 API"
 
 if __name__ == "__main__":
     app.run()
