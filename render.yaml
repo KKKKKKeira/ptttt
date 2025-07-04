@@ -3,6 +3,11 @@ services:
     name: ptt-sentiment-app
     env: python
     plan: free
-    buildCommand: ""
     startCommand: "gunicorn app:app"
-    autoDeploy: true
+
+  - type: cron
+    name: ptt-cron-analyzer
+    env: python
+    plan: free
+    schedule: "*/5 * * * *"
+    command: "python analyzer.py"
