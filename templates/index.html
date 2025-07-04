@@ -8,35 +8,61 @@
 </head>
 <body>
   <h2 style="text-align:center">PTT 八卦版情緒趨勢圖</h2>
+  <div style="text-align:center">
+    <label for="dateSelect">選擇日期：</label>
+    <select id="dateSelect"></select>
+  </div>
   <canvas id="trendChart" width="1000" height="400"></canvas>
 
   <script>
+    let chart;
+    function loadData(date) {
+      fetch("/data?date=" + date)
+        .then(res => res.json())
+        .then(data => {
+          const labels = data.map(d => d.timestamp);
+          const values = data.map(d => d.change_from_base);
+          const ctx = document.getElementById("trendChart").getContext("2d");
+          if (chart) chart.destroy();
+          chart = new Chart(ctx, {
+            type: "line",
+            data: {
+              labels: labels,
+              datasets: [{
+                label: "相對基準的負面詞變化量",
+                data: values,
+                borderColor: "red",
+                borderWidth: 2,
+                pointRadius: 4,
+                tension: 0.2
+              }]
+            },
+            options: {
+              scales: {
+                x: { title: { display: true, text: '時間' } },
+                y: { title: { display: true, text: '變化量' } }
+              }
+            }
+          });
+        });
+    }
+
     fetch("/data")
       .then(res => res.json())
       .then(data => {
-        const labels = data.map(d => d.hour);
-        const values = data.map(d => d.change_from_base);
-        const ctx = document.getElementById("trendChart").getContext("2d");
-        new Chart(ctx, {
-          type: "line",
-          data: {
-            labels: labels,
-            datasets: [{
-              label: "相對基準的負面詞變化量",
-              data: values,
-              borderColor: "red",
-              borderWidth: 2,
-              pointRadius: 4,
-              tension: 0.2
-            }]
-          },
-          options: {
-            scales: {
-              x: { title: { display: true, text: '時間' } },
-              y: { title: { display: true, text: '變化量' } }
-            }
-          }
+        const dates = [...new Set(data.map(d => d.timestamp.slice(0, 10)))];
+        const select = document.getElementById("dateSelect");
+        dates.forEach(date => {
+          const option = document.createElement("option");
+          option.value = date;
+          option.text = date;
+          select.appendChild(option);
         });
+        if (dates.length > 0) {
+          select.value = dates[dates.length - 1];
+          loadData(select.value);
+        }
+        select.addEventListener("change", () => loadData(select.value));
       });
   </script>
 </body>

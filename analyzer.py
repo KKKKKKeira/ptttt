@@ -38,14 +38,14 @@ def analyze_trends():
     neg_count = sum([counter[w] for w in NEGATIVE_WORDS])
 
     os.makedirs("data", exist_ok=True)
-    now = datetime.now().strftime("%Y-%m-%d %H:00")
+    now = datetime.now().strftime("%Y-%m-%d %H:%M")
     csv_path = "data/trends.csv"
     if os.path.exists(csv_path):
         df = pd.read_csv(csv_path)
         base = df["negative_count"].iloc[0]
     else:
         base = neg_count
-        df = pd.DataFrame(columns=["hour", "negative_count", "change_from_base", "trend"])
+        df = pd.DataFrame(columns=["timestamp", "negative_count", "change_from_base", "trend"])
 
     change = neg_count - base
     trend = "→"
@@ -55,7 +55,7 @@ def analyze_trends():
         trend = "↓"
 
     new_row = pd.DataFrame([{
-        "hour": now,
+        "timestamp": now,
         "negative_count": neg_count,
         "change_from_base": change,
         "trend": trend
